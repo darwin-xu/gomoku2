@@ -148,7 +148,7 @@ class Trainer {
 }
 
 // Parse command line arguments
-function parseArgs(): TrainingConfig {
+function parseArgs(): TrainingConfig | null {
     const args = process.argv.slice(2);
     const config: TrainingConfig = {
         numGames: 100,
@@ -189,7 +189,7 @@ function parseArgs(): TrainingConfig {
                 console.log('Examples:');
                 console.log('  npm run train -- --games 50 --simulations 1000');
                 console.log('  npm run train -- -g 200 -s 500 -o models/my_model.json');
-                process.exit(0);
+                return null;
         }
     }
 
@@ -200,6 +200,10 @@ function parseArgs(): TrainingConfig {
 async function main(): Promise<number> {
     try {
         const config = parseArgs();
+        if (!config) {
+            // Help was displayed
+            return 0;
+        }
         const trainer = new Trainer(config);
         await trainer.train();
         return 0;

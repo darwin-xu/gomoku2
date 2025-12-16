@@ -197,7 +197,7 @@ class InteractiveGame {
 }
 
 // Parse command line arguments
-function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simulations: number } {
+function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simulations: number } | null {
     const args = process.argv.slice(2);
     let modelPath = path.join(__dirname, '../../models/mcts_model.json');
     let humanColor: 'black' | 'white' = 'black';
@@ -213,8 +213,7 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
             case '-c':
                 const color = args[++i].toLowerCase();
                 if (color !== 'black' && color !== 'white') {
-                    console.error('Color must be "black" or "white"');
-                    process.exit(1);
+                    throw new Error('Color must be "black" or "white"');
                 }
                 humanColor = color;
                 break;
@@ -240,7 +239,7 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
                 console.log('During gameplay:');
                 console.log('  - Enter moves as "row col", e.g., "7 7" for center of 15x15 board');
                 console.log('  - Type "quit" or "exit" to end the game');
-                process.exit(0);
+                return null;
         }
     }
 
@@ -250,7 +249,12 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
 // Main execution
 async function main(): Promise<number> {
     try {
-        const { modelPath, humanColor, simulations } = parseArgs();
+        const args = parseArgs();
+        if (!args) {
+            // Help was displayed
+            return 0;
+        }
+        const { modelPath, humanColor, simulations } = args;
         const game = new InteractiveGame(modelPath, humanColor, simulations);
         await game.play();
         return 0;

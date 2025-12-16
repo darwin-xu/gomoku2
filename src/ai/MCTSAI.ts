@@ -246,7 +246,9 @@ export class MCTSAI implements TrainableAI {
         
         while (currentNode) {
             currentNode.update(currentResult);
-            // Flip result for each parent level since players alternate
+            // In MCTS, each node represents a player to move. When we traverse up the tree,
+            // we alternate between players at each level. Therefore, we must flip the result
+            // at each level: a win for Black at one level is a loss for White at the parent level.
             currentResult = 1 - currentResult;
             currentNode = currentNode.parent;
         }
