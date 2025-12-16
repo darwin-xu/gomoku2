@@ -8,7 +8,9 @@
     "start": "node dist/server/server.js",
     "dev": "ts-node src/server/server.ts",
     "clean": "rm -rf dist",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "train": "ts-node src/scripts/train.ts",
+    "play": "ts-node src/scripts/play.ts"
   },
   "keywords": ["gomoku", "game", "ai", "typescript"],
   "author": "",

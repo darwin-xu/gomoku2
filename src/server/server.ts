@@ -5,10 +5,12 @@
 import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import { Game } from '../game/Game';
 import { CellState } from '../game/types';
 import { AIPlayer } from '../ai/AIPlayer';
 import { RandomAI } from '../ai/RandomAI';
+import { MCTSAI } from '../ai/MCTSAI';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,13 +23,29 @@ app.use(express.static(path.join(__dirname, '../../public')));
 
 // Create a new game
 app.post('/api/game/new', (req, res) => {
-    const { boardSize = 15, vsAI = false } = req.body;
+    const { boardSize = 15, vsAI = false, aiType = 'random' } = req.body;
     const gameId = crypto.randomUUID();
     const game = new Game(boardSize);
     
     const gameData: { game: Game; ai?: AIPlayer } = { game };
     if (vsAI) {
-        gameData.ai = new RandomAI();
+        if (aiType === 'mcts') {
+            const mctsAI = new MCTSAI(1000);
+            const modelPath = path.join(__dirname, '../../models/mcts_model.json');
+            
+            // Try to load trained model
+            if (fs.existsSync(modelPath)) {
+                try {
+                    mctsAI.loadModel(modelPath);
+                    console.log('Loaded trained MCTS model');
+                } catch (error) {
+                    console.log('Failed to load MCTS model, using untrained AI');
+                }
+            }
+            gameData.ai = mctsAI;
+        } else {
+            gameData.ai = new RandomAI();
+        }
     }
     
     games.set(gameId, gameData);

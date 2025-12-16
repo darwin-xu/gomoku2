@@ -42,3 +42,6 @@ coverage/
 tmp/
 temp/
 *.tmp
+
+# AI Models (optional - remove if you want to commit models)
+# models/*.json
