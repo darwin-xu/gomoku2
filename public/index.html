@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gomoku</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Gomoku</h1>
+            <p class="subtitle">Five in a Row</p>
+        </header>
+
+        <div class="game-controls">
+            <div class="control-group">
+                <label>
+                    <input type="radio" name="gameMode" value="pvp" checked>
+                    Player vs Player
+                </label>
+                <label>
+                    <input type="radio" name="gameMode" value="ai">
+                    Player vs AI
+                </label>
+            </div>
+            <button id="newGameBtn" class="btn btn-primary">New Game</button>
+        </div>
+
+        <div class="game-info">
+            <div id="statusMessage" class="status-message">
+                Black's turn
+            </div>
+        </div>
+
+        <div id="boardContainer" class="board-container">
+            <canvas id="gameBoard"></canvas>
+        </div>
+
+        <div class="game-actions">
+            <button id="resetBtn" class="btn btn-secondary">Reset Game</button>
+        </div>
+    </div>
+
+    <script src="game-ui.js"></script>
+</body>
+</html>
