@@ -4,6 +4,7 @@
 
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { Game } from '../game/Game';
 import { CellState } from '../game/types';
 import { AIPlayer } from '../ai/AIPlayer';
@@ -21,7 +22,7 @@ app.use(express.static(path.join(__dirname, '../../public')));
 // Create a new game
 app.post('/api/game/new', (req, res) => {
     const { boardSize = 15, vsAI = false } = req.body;
-    const gameId = Date.now().toString();
+    const gameId = crypto.randomUUID();
     const game = new Game(boardSize);
     
     const gameData: { game: Game; ai?: AIPlayer } = { game };
