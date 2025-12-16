@@ -4,10 +4,12 @@ package-lock.json
 
 # Build output
 dist/
-*.js
-*.js.map
-*.d.ts
-*.d.ts.map
+
+# TypeScript compiled files (only in src/, not public/)
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
 
 # IDE
 .vscode/
