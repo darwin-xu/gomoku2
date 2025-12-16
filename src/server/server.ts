@@ -23,14 +23,16 @@ app.use(express.static(path.join(__dirname, '../../public')));
 
 // Create a new game
 app.post('/api/game/new', (req, res) => {
-    const { boardSize = 15, vsAI = false, aiType = 'random' } = req.body;
+    const { boardSize = 15, vsAI = false, aiType = 'random', aiSimulations } = req.body;
     const gameId = crypto.randomUUID();
     const game = new Game(boardSize);
     
     const gameData: { game: Game; ai?: AIPlayer } = { game };
     if (vsAI) {
         if (aiType === 'mcts') {
-            const mctsAI = new MCTSAI(1000);
+            // Use provided simulations, env variable, or default to 1000
+            const simulations = aiSimulations || parseInt(process.env.MCTS_SIMULATIONS || '1000');
+            const mctsAI = new MCTSAI(simulations);
             const modelPath = path.join(__dirname, '../../models/mcts_model.json');
             
             // Try to load trained model

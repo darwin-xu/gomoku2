@@ -242,11 +242,12 @@ export class MCTSAI implements TrainableAI {
 
     private backpropagate(node: MCTSNode | null, result: number): void {
         let currentNode = node;
+        let currentResult = result;
         
         while (currentNode) {
-            // Flip result for alternating players
-            const nodeResult = currentNode.player === node?.player ? result : 1 - result;
-            currentNode.update(nodeResult);
+            currentNode.update(currentResult);
+            // Flip result for each parent level since players alternate
+            currentResult = 1 - currentResult;
             currentNode = currentNode.parent;
         }
     }

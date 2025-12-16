@@ -197,15 +197,16 @@ function parseArgs(): TrainingConfig {
 }
 
 // Main execution
-async function main() {
+async function main(): Promise<number> {
     try {
         const config = parseArgs();
         const trainer = new Trainer(config);
         await trainer.train();
+        return 0;
     } catch (error) {
         console.error('Error during training:', error);
-        process.exit(1);
+        return 1;
     }
 }
 
-main();
+main().then(exitCode => process.exit(exitCode));

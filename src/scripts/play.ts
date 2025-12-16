@@ -15,11 +15,13 @@ class InteractiveGame {
     private ai: MCTSAI;
     private humanPlayer: CellState.Black | CellState.White;
     private rl: readline.Interface;
+    private shouldQuit: boolean;
 
     constructor(modelPath: string, humanColor: 'black' | 'white', simulations: number = 1000) {
         this.game = new Game(15);
         this.ai = new MCTSAI(simulations);
         this.humanPlayer = humanColor === 'black' ? CellState.Black : CellState.White;
+        this.shouldQuit = false;
         
         // Load trained model if it exists
         if (fs.existsSync(modelPath)) {
@@ -51,7 +53,7 @@ class InteractiveGame {
     }
 
     private async gameLoop(): Promise<void> {
-        while (this.game.getStatus() === GameStatus.InProgress) {
+        while (this.game.getStatus() === GameStatus.InProgress && !this.shouldQuit) {
             this.printBoard();
             
             const currentPlayer = this.game.getCurrentPlayer();
@@ -63,9 +65,11 @@ class InteractiveGame {
             }
         }
 
-        // Game over
-        this.printBoard();
-        this.printGameResult();
+        // Game over or user quit
+        if (!this.shouldQuit) {
+            this.printBoard();
+            this.printGameResult();
+        }
     }
 
     private printBoard(): void {
@@ -112,7 +116,8 @@ class InteractiveGame {
             
             if (input.toLowerCase() === 'quit' || input.toLowerCase() === 'exit') {
                 console.log('Game terminated by user.');
-                process.exit(0);
+                this.shouldQuit = true;
+                return;
             }
 
             const parts = input.trim().split(/\s+/);
@@ -243,15 +248,16 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
 }
 
 // Main execution
-async function main() {
+async function main(): Promise<number> {
     try {
         const { modelPath, humanColor, simulations } = parseArgs();
         const game = new InteractiveGame(modelPath, humanColor, simulations);
         await game.play();
+        return 0;
     } catch (error) {
         console.error('Error during gameplay:', error);
-        process.exit(1);
+        return 1;
     }
 }
 
-main();
+main().then(exitCode => process.exit(exitCode));
