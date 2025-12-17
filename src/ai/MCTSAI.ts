@@ -3,7 +3,7 @@
  * Implements a trainable AI using MCTS algorithm with UCB1 selection
  */
 
-import { AIPlayer, TrainableAI } from './AIPlayer';
+import { TrainableAI } from './AIPlayer';
 import { Position, GameState, CellState, GameStatus } from '../game/types';
 import { Board } from '../game/Board';
 import { Game } from '../game/Game';
@@ -16,6 +16,34 @@ interface MCTSNodeData {
     visits: number;
     wins: number;
     children: MCTSNodeData[];
+}
+
+// Utility functions for MCTS
+function getValidMovesFromBoard(board: Board): Position[] {
+    const moves: Position[] = [];
+    const size = board.getSize();
+    
+    for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+            const position = { row, col };
+            if (board.isEmpty(position)) {
+                moves.push(position);
+            }
+        }
+    }
+    
+    return moves;
+}
+
+function cloneGameByReplay(game: Game): Game {
+    const newGame = new Game(game.getBoardSize());
+    const moves = game.getMoveHistory();
+    
+    for (const move of moves) {
+        newGame.makeMove(move.position);
+    }
+    
+    return newGame;
 }
 
 class MCTSNode {
@@ -68,46 +96,19 @@ class MCTSNode {
         const nextPlayer = this.player === CellState.Black ? CellState.White : CellState.Black;
         
         // Make the move to get valid next moves
-        const tempGame = this.cloneGame(game);
+        const tempGame = cloneGameByReplay(game);
         tempGame.makeMove(move);
         
-        const nextMoves = this.getValidMoves(tempGame.getBoard());
+        const nextMoves = getValidMovesFromBoard(tempGame.getBoard());
         const childNode = new MCTSNode(move, nextPlayer, this, nextMoves);
         this.children.push(childNode);
         
         return childNode;
     }
 
-    private getValidMoves(board: Board): Position[] {
-        const moves: Position[] = [];
-        const size = board.getSize();
-        
-        for (let row = 0; row < size; row++) {
-            for (let col = 0; col < size; col++) {
-                const position = { row, col };
-                if (board.isEmpty(position)) {
-                    moves.push(position);
-                }
-            }
-        }
-        
-        return moves;
-    }
-
-    private cloneGame(game: Game): Game {
-        const newGame = new Game(game.getBoardSize());
-        const moves = game.getMoveHistory();
-        
-        for (const move of moves) {
-            newGame.makeMove(move.position);
-        }
-        
-        return newGame;
-    }
-
-    public update(result: number): void {
+    public update(winValue: number): void {
         this.visits++;
-        this.wins += result;
+        this.wins += winValue;
     }
 
     public toJSON(): MCTSNodeData {
@@ -150,7 +151,7 @@ export class MCTSAI implements TrainableAI {
             null,
             gameState.currentPlayer,
             null,
-            this.getValidMoves(board)
+            getValidMovesFromBoard(board)
         );
 
         // Run MCTS simulations
@@ -161,6 +162,10 @@ export class MCTSAI implements TrainableAI {
         }
 
         // Choose the move with the most visits (most explored)
+        if (rootNode.children.length === 0) {
+            throw new Error('No valid moves available');
+        }
+        
         const bestChild = rootNode.children.reduce((best, child) => {
             return child.visits > best.visits ? child : best;
         });
@@ -176,7 +181,7 @@ export class MCTSAI implements TrainableAI {
     }
 
     private select(node: MCTSNode, game: Game): MCTSNode {
-        const gameCopy = this.cloneGame(game);
+        const gameCopy = cloneGameByReplay(game);
         let currentNode = node;
 
         while (true) {
@@ -204,7 +209,7 @@ export class MCTSAI implements TrainableAI {
     }
 
     private simulate(node: MCTSNode, game: Game): number {
-        const gameCopy = this.cloneGame(game);
+        const gameCopy = cloneGameByReplay(game);
         
         // Play through the path to this node
         let currentNode: MCTSNode | null = node;
@@ -223,8 +228,11 @@ export class MCTSAI implements TrainableAI {
 
         // Simulate random playout
         while (gameCopy.getStatus() === GameStatus.InProgress) {
-            const validMoves = this.getValidMoves(gameCopy.getBoard());
-            if (validMoves.length === 0) break;
+            const validMoves = getValidMovesFromBoard(gameCopy.getBoard());
+            if (validMoves.length === 0) {
+                // No valid moves but game not finished - treat as draw
+                return 0.5;
+            }
             
             const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
             gameCopy.makeMove(randomMove);
@@ -240,34 +248,18 @@ export class MCTSAI implements TrainableAI {
         return winner === node.player ? 1 : 0;
     }
 
-    private backpropagate(node: MCTSNode | null, result: number): void {
+    private backpropagate(node: MCTSNode | null, winValue: number): void {
         let currentNode = node;
-        let currentResult = result;
+        let currentWinValue = winValue;
         
         while (currentNode) {
-            currentNode.update(currentResult);
+            currentNode.update(currentWinValue);
             // In MCTS, each node represents a player to move. When we traverse up the tree,
             // we alternate between players at each level. Therefore, we must flip the result
             // at each level: a win for Black at one level is a loss for White at the parent level.
-            currentResult = 1 - currentResult;
+            currentWinValue = 1 - currentWinValue;
             currentNode = currentNode.parent;
         }
-    }
-
-    private getValidMoves(board: Board): Position[] {
-        const moves: Position[] = [];
-        const size = board.getSize();
-        
-        for (let row = 0; row < size; row++) {
-            for (let col = 0; col < size; col++) {
-                const position = { row, col };
-                if (board.isEmpty(position)) {
-                    moves.push(position);
-                }
-            }
-        }
-        
-        return moves;
     }
 
     private reconstructGame(gameState: GameState): Game {
@@ -280,19 +272,9 @@ export class MCTSAI implements TrainableAI {
         return game;
     }
 
-    private cloneGame(game: Game): Game {
-        const newGame = new Game(game.getBoardSize());
-        const moves = game.getMoveHistory();
-        
-        for (const move of moves) {
-            newGame.makeMove(move.position);
-        }
-        
-        return newGame;
-    }
-
     private getBoardStateKey(gameState: GameState): string {
-        return JSON.stringify(gameState.board);
+        // Efficient board state serialization using concatenated cell values
+        return gameState.board.map(row => row.join(',')).join(';');
     }
 
     private updateKnowledgeBase(
@@ -334,9 +316,9 @@ export class MCTSAI implements TrainableAI {
     }
 
     private learnFromState(state: GameState, winner: CellState | null): void {
-        // This is a simplified learning approach
-        // In a full implementation, this would update neural network weights
-        // For now, we just accumulate statistics
+        // Accumulate position statistics for future enhancement
+        // Currently used for training tracking only; not consulted during move selection
+        // Future versions could use this data to bias MCTS exploration
         const key = this.getBoardStateKey(state);
         const result = winner === state.currentPlayer ? 1 : (winner === null ? 0.5 : 0);
         

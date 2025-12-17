@@ -161,18 +161,42 @@ function parseArgs(): TrainingConfig | null {
         switch (args[i]) {
             case '--games':
             case '-g':
-                config.numGames = parseInt(args[++i]);
+                if (i + 1 >= args.length) {
+                    throw new Error('--games requires a value');
+                }
+                const games = parseInt(args[++i]);
+                if (isNaN(games) || games <= 0) {
+                    throw new Error('--games must be a positive integer');
+                }
+                config.numGames = games;
                 break;
             case '--simulations':
             case '-s':
-                config.simulations = parseInt(args[++i]);
+                if (i + 1 >= args.length) {
+                    throw new Error('--simulations requires a value');
+                }
+                const sims = parseInt(args[++i]);
+                if (isNaN(sims) || sims <= 0) {
+                    throw new Error('--simulations must be a positive integer');
+                }
+                config.simulations = sims;
                 break;
             case '--board-size':
             case '-b':
-                config.boardSize = parseInt(args[++i]);
+                if (i + 1 >= args.length) {
+                    throw new Error('--board-size requires a value');
+                }
+                const size = parseInt(args[++i]);
+                if (isNaN(size) || size < 5 || size > 20) {
+                    throw new Error('--board-size must be between 5 and 20');
+                }
+                config.boardSize = size;
                 break;
             case '--output':
             case '-o':
+                if (i + 1 >= args.length) {
+                    throw new Error('--output requires a value');
+                }
                 config.modelPath = args[++i];
                 break;
             case '--help':
@@ -208,7 +232,11 @@ async function main(): Promise<number> {
         await trainer.train();
         return 0;
     } catch (error) {
-        console.error('Error during training:', error);
+        if (error instanceof Error) {
+            console.error('Training error:', error.message);
+        } else {
+            console.error('Training error:', error);
+        }
         return 1;
     }
 }

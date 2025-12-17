@@ -30,8 +30,27 @@ app.post('/api/game/new', (req, res) => {
     const gameData: { game: Game; ai?: AIPlayer } = { game };
     if (vsAI) {
         if (aiType === 'mcts') {
-            // Use provided simulations, env variable, or default to 1000
-            const simulations = aiSimulations || parseInt(process.env.MCTS_SIMULATIONS || '1000');
+            // Parse and validate simulations parameter
+            let simulations = 1000; // default
+            if (aiSimulations !== undefined) {
+                simulations = aiSimulations;
+            } else if (process.env.MCTS_SIMULATIONS) {
+                const parsed = parseInt(process.env.MCTS_SIMULATIONS);
+                if (!isNaN(parsed) && parsed > 0) {
+                    simulations = parsed;
+                }
+            }
+            
+            // Validate simulations is a positive integer
+            if (isNaN(simulations) || simulations <= 0 || !Number.isInteger(simulations)) {
+                return res.status(400).json({ error: 'Invalid simulations parameter: must be a positive integer' });
+            }
+            
+            // Limit maximum simulations to prevent excessive computation
+            if (simulations > 10000) {
+                return res.status(400).json({ error: 'Simulations parameter too large: maximum is 10000' });
+            }
+            
             const mctsAI = new MCTSAI(simulations);
             const modelPath = path.join(__dirname, '../../models/mcts_model.json');
             
@@ -41,7 +60,7 @@ app.post('/api/game/new', (req, res) => {
                     mctsAI.loadModel(modelPath);
                     console.log('Loaded trained MCTS model');
                 } catch (error) {
-                    console.log('Failed to load MCTS model, using untrained AI');
+                    console.log('Failed to load MCTS model, using untrained AI', error);
                 }
             }
             gameData.ai = mctsAI;

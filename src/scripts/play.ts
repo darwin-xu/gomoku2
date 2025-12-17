@@ -207,10 +207,16 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
         switch (args[i]) {
             case '--model':
             case '-m':
+                if (i + 1 >= args.length) {
+                    throw new Error('--model requires a value');
+                }
                 modelPath = args[++i];
                 break;
             case '--color':
             case '-c':
+                if (i + 1 >= args.length) {
+                    throw new Error('--color requires a value');
+                }
                 const color = args[++i].toLowerCase();
                 if (color !== 'black' && color !== 'white') {
                     throw new Error('Color must be "black" or "white"');
@@ -219,7 +225,14 @@ function parseArgs(): { modelPath: string; humanColor: 'black' | 'white'; simula
                 break;
             case '--simulations':
             case '-s':
-                simulations = parseInt(args[++i]);
+                if (i + 1 >= args.length) {
+                    throw new Error('--simulations requires a value');
+                }
+                const sims = parseInt(args[++i]);
+                if (isNaN(sims) || sims <= 0) {
+                    throw new Error('--simulations must be a positive integer');
+                }
+                simulations = sims;
                 break;
             case '--help':
             case '-h':
@@ -259,7 +272,11 @@ async function main(): Promise<number> {
         await game.play();
         return 0;
     } catch (error) {
-        console.error('Error during gameplay:', error);
+        if (error instanceof Error) {
+            console.error('Gameplay error:', error.message);
+        } else {
+            console.error('Gameplay error:', error);
+        }
         return 1;
     }
 }
